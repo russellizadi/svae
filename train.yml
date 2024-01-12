@@ -1,0 +1,73 @@
+project: dis-vocalset
+dir: /home/russell/src/dis-vocalset/data
+device: "cuda:1"
+wandb: True
+entity: russellizadilocal
+notes: "mlvae"
+tags: ["train", ]
+watch_freq: 10000
+valid_freq: 100
+
+engine:
+  debug: 0
+  steps: 2000000
+  optim:
+    lr: 1.e-4
+    weight_decay: 1.e-4
+
+data:
+  vocalset:
+    root: /ext/projects/disentangle/datasets/vocalset
+    seed: 58
+    ratio: .9
+  sample_rate: &sample_rate 16000
+  norm: true
+
+  features:
+    sample_rate: *sample_rate
+    n_fft: 4096 # 2048
+    win_length: 4096 # 2048
+    hop_length: 2048 # 1024
+    n_mels: 16
+    power: 2
+
+  attrs: &attrs [
+    singer, 
+    context,
+    technique,
+    vowel]
+
+  loader:
+    batch_size: 64
+    shuffle: true
+    drop_last: false
+    num_workers: 8
+    pin_memory: False
+
+model:
+  name: mlvae # mlvae, gvae, svae (our)
+  encoder:
+    d_input: &d_input 16
+    d_hidden: &d_hidden 1024
+    d_latent: 4 # 2 * d_latent
+    n_heads: &n_heads 2
+    n_layers: &n_leayers 2
+    max_duration: &max_duration 1024
+    rates: [0, 0, 0, 0]
+  decoder:
+    d_latent: &d_latent 2
+    d_hidden: *d_hidden
+    d_output: *d_input
+    n_attrs: 4
+    n_heads: *n_heads
+    n_layers: *n_leayers
+    max_duration: *max_duration
+  
+  prior:
+    dim: *d_latent
+  
+  posterior_q:
+    dim: *d_latent
+  
+  posterior_p:
+    dim: *d_latent
